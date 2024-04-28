@@ -1,11 +1,15 @@
 const express = require('express');
+const path = require('path');
+const multer = require('multer');
+const logger = require('morgan');
 const router = express.Router();
 const app = express();
 const port = 5001;
-
+const upload = multer({ dest: './public/uploads' });
 //Built-in middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/static', express.static(path.join(__dirname, 'public')));
 
 //application level middleware
 const loggerMiddleware = (req, res, next) => {
@@ -15,6 +19,8 @@ const loggerMiddleware = (req, res, next) => {
 
 app.use(loggerMiddleware);
 //Third party middleware
+app.use(logger('combined'));
+
 //Router-level middleware
 app.use('/api/users', router);
 
@@ -68,6 +74,18 @@ const errorHandler = (err, req, res, next) => {
             break;
     }
 };
+
+app.post('/upload', upload.single('image'), (req, res, next) => {
+    console.log(req.file, req.body);
+    res.send(req.file);
+}, (err, req, res, next) => {
+    res.status(400).send({ err: error.message });
+});
+
+app.all('*', (req, res) => {
+    res.status(404);
+    throw new Error('Route not found');
+});
 
 app.use(errorHandler);
 app.listen(port, () => {
